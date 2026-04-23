@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import warnings
 import numpy as np
 import pandas as pd
 from scipy.stats import kurtosis, skew
@@ -153,8 +153,10 @@ def extract_features_from_single_window(window: np.ndarray) -> np.ndarray:
         mean_abs_diff = np.zeros(window.shape[1], dtype=np.float64)
         std_diff = np.zeros(window.shape[1], dtype=np.float64)
 
-    skewness = skew(window, axis=0, bias=False, nan_policy="omit")
-    kurt = kurtosis(window, axis=0, fisher=True, bias=False, nan_policy="omit")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        skewness = skew(window, axis=0, bias=False, nan_policy="omit")
+        kurt = kurtosis(window, axis=0, fisher=True, bias=False, nan_policy="omit")
 
     skewness = np.nan_to_num(skewness, nan=0.0, posinf=0.0, neginf=0.0)
     kurt = np.nan_to_num(kurt, nan=0.0, posinf=0.0, neginf=0.0)
