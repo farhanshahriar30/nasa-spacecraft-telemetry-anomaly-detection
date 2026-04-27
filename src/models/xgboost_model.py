@@ -18,16 +18,6 @@ from src.models.tuning import (
 def compute_scale_pos_weight(y: np.ndarray) -> float:
     """
     Compute scale_pos_weight = n_negative / n_positive.
-
-    Parameters
-    ----------
-    y : np.ndarray
-        Binary label array.
-
-    Returns
-    -------
-    float
-        Positive-class weight for XGBoost.
     """
     y = np.asarray(y, dtype=np.int64)
 
@@ -119,8 +109,10 @@ def run_xgboost_grouped_cv(
     groups = cv_data["groups"]
     feature_cols = cv_data["feature_cols"]
     fold_indices = cv_data["fold_indices"]
+    metadata_df = cv_data["metadata_df"]
 
     fold_records = []
+    oof_prediction_dfs = []
 
     for fold_id, (train_idx, val_idx) in enumerate(fold_indices):
         X_train = X[train_idx]
@@ -159,7 +151,18 @@ def run_xgboost_grouped_cv(
 
         fold_records.append(metrics)
 
+        fold_oof_df = metadata_df.iloc[val_idx].copy()
+        fold_oof_df["dev_row_idx"] = val_idx
+        fold_oof_df["y_true"] = y_val
+        fold_oof_df["y_score"] = y_val_score
+        fold_oof_df["fold_id"] = fold_id
+        oof_prediction_dfs.append(fold_oof_df)
+
     fold_metrics_df = pd.DataFrame(fold_records)
+    oof_prediction_df = pd.concat(oof_prediction_dfs, axis=0, ignore_index=True)
+    oof_prediction_df = oof_prediction_df.sort_values("dev_row_idx").reset_index(
+        drop=True
+    )
 
     mean_metrics = (
         fold_metrics_df[
@@ -194,6 +197,7 @@ def run_xgboost_grouped_cv(
         "mean_metrics": mean_metrics,
         "std_metrics": std_metrics,
         "feature_cols": feature_cols,
+        "oof_prediction_df": oof_prediction_df,
     }
 
 
@@ -236,11 +240,17 @@ def train_xgboost_final_model(
         threshold=threshold,
     )
 
+    metadata_cols = [col for col in test_df.columns if col not in feature_cols]
+    test_prediction_df = test_df[metadata_cols].copy().reset_index(drop=True)
+    test_prediction_df["y_true"] = y_test
+    test_prediction_df["y_score"] = y_test_score
+
     return {
         "model": model,
         "feature_cols": feature_cols,
         "test_metrics": test_metrics,
         "y_test_score": y_test_score,
+        "test_prediction_df": test_prediction_df,
         "scale_pos_weight": float(final_params["scale_pos_weight"]),
     }
 

@@ -21,30 +21,52 @@ def get_channel_metadata_row(
     """
     Fetch the metadata row for a given channel ID.
 
-    Parameters
-    ----------
-    chan_id : str
-        Channel identifier.
-    labels_df : pd.DataFrame | None
-        Optional preloaded metadata dataframe.
-
-    Returns
-    -------
-    pd.Series
-        Metadata row for the requested channel.
+    If multiple rows exist for the same channel, they are merged into a single
+    channel-level metadata record by combining anomaly intervals and classes.
     """
     if labels_df is None:
         labels_df = load_labels_metadata()
 
-    matches = labels_df[labels_df["chan_id"] == chan_id]
+    matches = labels_df[labels_df["chan_id"] == chan_id].copy()
 
     if matches.empty:
         raise ValueError(f"No metadata row found for channel: {chan_id}")
 
-    if len(matches) > 1:
-        raise ValueError(f"Multiple metadata rows found for channel: {chan_id}")
+    if len(matches) == 1:
+        return matches.iloc[0]
 
-    return matches.iloc[0]
+    spacecraft_values = matches["spacecraft"].dropna().astype(str).unique().tolist()
+    if len(spacecraft_values) != 1:
+        raise ValueError(
+            f"Conflicting spacecraft values found for channel {chan_id}: {spacecraft_values}"
+        )
+
+    num_values_values = matches["num_values"].dropna().astype(int).unique().tolist()
+    if len(num_values_values) != 1:
+        raise ValueError(
+            f"Conflicting num_values found for channel {chan_id}: {num_values_values}"
+        )
+
+    combined_intervals = []
+    combined_classes = []
+
+    for _, row in matches.iterrows():
+        intervals = row["anomaly_sequences"]
+        classes = row["class"]
+
+        if isinstance(intervals, list):
+            combined_intervals.extend(intervals)
+
+        if isinstance(classes, list):
+            combined_classes.extend(classes)
+
+    merged_row = matches.iloc[0].copy()
+    merged_row["anomaly_sequences"] = combined_intervals
+    merged_row["class"] = combined_classes
+    merged_row["spacecraft"] = spacecraft_values[0]
+    merged_row["num_values"] = num_values_values[0]
+
+    return merged_row
 
 
 # Phase B: Build the unsupervised feature tables

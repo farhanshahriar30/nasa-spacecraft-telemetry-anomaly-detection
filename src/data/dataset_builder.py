@@ -12,57 +12,49 @@ from src.data.pipeline import (
 )
 
 
-# Phase A: Get an ordered list of channel IDs, optionally filtered by spacecraft
-def get_channel_ids(
-    labels_df: pd.DataFrame | None = None,
+# Phase A: Restrict metadata to one spacecraft when requested
+def filter_labels_df_by_spacecraft(
+    labels_df: pd.DataFrame,
     spacecraft: str | None = None,
-) -> list[str]:
+) -> pd.DataFrame:
     """
-    Return channel IDs, optionally filtered to one spacecraft.
-
-    Parameters
-    ----------
-    labels_df : pd.DataFrame | None
-        Optional preloaded metadata dataframe.
-    spacecraft : str | None
-        Optional spacecraft filter, e.g. "SMAP" or "MSL".
-
-    Returns
-    -------
-    list[str]
-        Sorted list of channel IDs.
+    Return a metadata dataframe optionally filtered to one spacecraft.
     """
-    if labels_df is None:
-        labels_df = load_labels_metadata()
-
     df = labels_df.copy()
 
     if spacecraft is not None:
         spacecraft = spacecraft.strip().upper()
         df = df[df["spacecraft"].str.upper() == spacecraft]
 
-    return sorted(df["chan_id"].tolist())
+    return df.reset_index(drop=True)
 
 
-# Phase B: Add spacecraft as a metadata column to a feature dataframe
+# Phase B: Get an ordered list of channel IDs, optionally filtered by spacecraft
+def get_channel_ids(
+    labels_df: pd.DataFrame | None = None,
+    spacecraft: str | None = None,
+) -> list[str]:
+    """
+    Return unique channel IDs, optionally filtered to one spacecraft.
+    """
+    if labels_df is None:
+        labels_df = load_labels_metadata()
+
+    filtered_df = filter_labels_df_by_spacecraft(
+        labels_df=labels_df,
+        spacecraft=spacecraft,
+    )
+
+    return sorted(filtered_df["chan_id"].unique().tolist())
+
+
+# Phase C: Add spacecraft as a metadata column to a feature dataframe
 def attach_spacecraft_column(
     feature_df: pd.DataFrame,
     spacecraft: str,
 ) -> pd.DataFrame:
     """
     Add spacecraft as a column near the front of a feature dataframe.
-
-    Parameters
-    ----------
-    feature_df : pd.DataFrame
-        Feature dataframe that already includes chan_id.
-    spacecraft : str
-        Spacecraft name.
-
-    Returns
-    -------
-    pd.DataFrame
-        Updated dataframe.
     """
     df = feature_df.copy()
 
@@ -73,7 +65,7 @@ def attach_spacecraft_column(
     return df
 
 
-# Phase C: Build a combined supervised dataset across many channels
+# Phase D: Build a combined supervised dataset across many channels
 def build_supervised_dataset(
     chan_ids: list[str] | None = None,
     labels_df: pd.DataFrame | None = None,
@@ -85,32 +77,17 @@ def build_supervised_dataset(
     """
     Build one combined supervised dataset from labeled test windows
     across multiple channels.
-
-    Parameters
-    ----------
-    chan_ids : list[str] | None
-        Optional explicit list of channels to process.
-    labels_df : pd.DataFrame | None
-        Optional preloaded metadata dataframe.
-    spacecraft : str | None
-        Optional spacecraft filter.
-    scaler_name : str
-        Scaler name.
-    window_size : int
-        Sliding window size.
-    stride : int
-        Sliding window stride.
-
-    Returns
-    -------
-    dict[str, Any]
-        Combined supervised dataset and per-channel summary table.
     """
     if labels_df is None:
         labels_df = load_labels_metadata()
 
+    working_labels_df = filter_labels_df_by_spacecraft(
+        labels_df=labels_df,
+        spacecraft=spacecraft,
+    )
+
     if chan_ids is None:
-        chan_ids = get_channel_ids(labels_df=labels_df, spacecraft=spacecraft)
+        chan_ids = sorted(working_labels_df["chan_id"].unique().tolist())
 
     all_feature_dfs: list[pd.DataFrame] = []
     summary_records: list[dict[str, Any]] = []
@@ -118,7 +95,7 @@ def build_supervised_dataset(
     for chan_id in chan_ids:
         channel_data = build_channel_supervised_data(
             chan_id=chan_id,
-            labels_df=labels_df,
+            labels_df=working_labels_df,
             scaler_name=scaler_name,
             window_size=window_size,
             stride=stride,
@@ -159,7 +136,7 @@ def build_supervised_dataset(
     }
 
 
-# Phase D: Build combined unsupervised train/test datasets across many channels
+# Phase E: Build combined unsupervised train/test datasets across many channels
 def build_unsupervised_dataset(
     chan_ids: list[str] | None = None,
     labels_df: pd.DataFrame | None = None,
@@ -171,32 +148,17 @@ def build_unsupervised_dataset(
     """
     Build combined train/test feature datasets across multiple channels
     for the unsupervised pipeline.
-
-    Parameters
-    ----------
-    chan_ids : list[str] | None
-        Optional explicit list of channels to process.
-    labels_df : pd.DataFrame | None
-        Optional preloaded metadata dataframe.
-    spacecraft : str | None
-        Optional spacecraft filter.
-    scaler_name : str
-        Scaler name.
-    window_size : int
-        Sliding window size.
-    stride : int
-        Sliding window stride.
-
-    Returns
-    -------
-    dict[str, Any]
-        Combined unsupervised datasets and per-channel summary table.
     """
     if labels_df is None:
         labels_df = load_labels_metadata()
 
+    working_labels_df = filter_labels_df_by_spacecraft(
+        labels_df=labels_df,
+        spacecraft=spacecraft,
+    )
+
     if chan_ids is None:
-        chan_ids = get_channel_ids(labels_df=labels_df, spacecraft=spacecraft)
+        chan_ids = sorted(working_labels_df["chan_id"].unique().tolist())
 
     train_feature_dfs: list[pd.DataFrame] = []
     test_feature_dfs: list[pd.DataFrame] = []
@@ -205,7 +167,7 @@ def build_unsupervised_dataset(
     for chan_id in chan_ids:
         channel_data = build_channel_unsupervised_data(
             chan_id=chan_id,
-            labels_df=labels_df,
+            labels_df=working_labels_df,
             scaler_name=scaler_name,
             window_size=window_size,
             stride=stride,
