@@ -1,3 +1,7 @@
+# This file handles preprocessing for raw telemetry arrays.
+# It contains helper functions for fitting and applying channel-wise scaling
+# so train and test sequences are transformed consistently without data leakage.
+
 from __future__ import annotations
 
 from typing import Literal

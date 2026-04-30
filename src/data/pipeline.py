@@ -1,3 +1,7 @@
+# This file contains the end-to-end processing logic for a single telemetry channel.
+# It connects metadata lookup, raw array loading, scaling, window creation,
+# window labeling, and feature generation into one reusable pipeline.
+
 from __future__ import annotations
 
 from typing import Any

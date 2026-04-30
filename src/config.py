@@ -1,3 +1,7 @@
+# This file stores the main project configuration used across the pipeline.
+# It defines important paths, experiment settings, and shared constants
+# such as window size, stride, random seed, and scaler choice.
+
 from pathlib import Path
 
 # Phase A: Define the main project paths in one place

@@ -1,3 +1,7 @@
+# This file converts each multivariate telemetry window into a flat feature vector.
+# It extracts statistical and trend-based features from every variable
+# so the window data can be used by classical machine learning models.
+
 from __future__ import annotations
 import warnings
 import numpy as np

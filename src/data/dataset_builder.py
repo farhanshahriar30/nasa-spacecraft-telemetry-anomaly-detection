@@ -1,3 +1,7 @@
+# This file builds full datasets across multiple telemetry channels.
+# It loops through selected channel IDs and combines their processed outputs
+# into unified supervised and unsupervised dataframes for model training and evaluation.
+
 from __future__ import annotations
 
 from typing import Any

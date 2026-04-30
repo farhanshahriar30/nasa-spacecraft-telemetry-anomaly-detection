@@ -1,3 +1,7 @@
+# This file defines channel-level data splitting utilities.
+# It is used to create development/test splits and grouped folds
+# so that windows from the same channel do not leak across evaluation boundaries.
+
 from __future__ import annotations
 
 from typing import Any
