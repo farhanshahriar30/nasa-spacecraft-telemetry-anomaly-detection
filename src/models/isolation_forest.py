@@ -1,3 +1,6 @@
+# Isolation Forest utilities for the unsupervised anomaly detection baseline.
+# This file fits Isolation Forest on development training windows, scores evaluation windows,
+# and normalizes anomaly scores so threshold tuning can be performed consistently.
 from __future__ import annotations
 
 from typing import Any

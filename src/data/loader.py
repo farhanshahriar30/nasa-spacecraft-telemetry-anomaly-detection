@@ -1,3 +1,6 @@
+# Data loading utilities for the spacecraft telemetry benchmark.
+# This file reads the anomaly metadata and raw train/test channel arrays,
+# and provides helper functions for quick channel-level dataset inspection.
 from __future__ import annotations
 
 import ast

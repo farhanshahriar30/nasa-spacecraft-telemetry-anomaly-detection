@@ -1,3 +1,5 @@
+# Window-level labeling utilities for anomaly detection.
+# This file converts anomaly intervals from the metadata into binary labels by checking whether each sliding window overlaps a labeled anomaly range.
 from __future__ import annotations
 
 from typing import Any

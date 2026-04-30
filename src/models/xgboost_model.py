@@ -1,3 +1,6 @@
+# XGBoost training and evaluation utilities.
+# This file supports grouped cross-validation, imbalance-aware training,
+# final held-out evaluation, and feature-importance reporting for the XGBoost experiments.
 from __future__ import annotations
 
 from typing import Any

@@ -1,3 +1,6 @@
+# Evaluation metric utilities for anomaly detection experiments.
+# This file converts model scores into binary predictions and computes
+# the main classification metrics used throughout the project.
 from __future__ import annotations
 
 from typing import Any

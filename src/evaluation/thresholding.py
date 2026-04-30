@@ -1,3 +1,6 @@
+# Threshold tuning utilities for anomaly detection scores.
+# This file evaluates model outputs across multiple thresholds and selects
+# the operating point that gives the best development-set performance.
 from __future__ import annotations
 
 from typing import Any

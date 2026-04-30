@@ -1,3 +1,6 @@
+# Random Forest training and evaluation utilities.
+# This file handles grouped cross-validation, final held-out testing,
+# and feature-importance reporting for the supervised Random Forest experiments.
 from __future__ import annotations
 
 from typing import Any

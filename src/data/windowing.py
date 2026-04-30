@@ -1,3 +1,6 @@
+# Sliding-window utilities for telemetry sequences.
+# This file converts raw multivariate time-series arrays into overlapping windows
+# and builds matching index tables so each window can be traced back to its source position.
 from __future__ import annotations
 
 import numpy as np

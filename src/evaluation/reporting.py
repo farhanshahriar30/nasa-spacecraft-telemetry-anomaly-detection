@@ -1,3 +1,6 @@
+# Reporting utilities for final tables and figures.
+# This file contains helper functions for rounding results, saving tables,
+# and generating compact plots used in the project analysis.
 from __future__ import annotations
 
 from pathlib import Path

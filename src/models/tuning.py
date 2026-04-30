@@ -1,3 +1,6 @@
+# Tuning and split-preparation utilities for supervised modeling.
+# This file identifies feature columns, prepares model-ready arrays,
+# and builds grouped cross-validation folds for leakage-aware development experiments.
 from __future__ import annotations
 
 from typing import Any
