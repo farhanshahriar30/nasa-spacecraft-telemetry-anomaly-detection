@@ -23,7 +23,7 @@ Each channel is a 2D array where rows are time steps and columns are telemetry v
 Required files:
 
 ```
-data/
+data/raw/
 ├── labeled_anomalies.csv    # channel id, spacecraft, anomaly intervals, length
 ├── train/                   # per-channel .npy telemetry sequences
 └── test/                    # per-channel .npy telemetry sequences
@@ -141,31 +141,69 @@ This is where most of the work went.
 ```
 .
 ├── src/
-│   ├── preprocessing.py        # per-channel scaling, interval parsing
-│   ├── windowing.py            # sliding windows, overlap labelling
-│   ├── features.py             # 12 statistics per variable
-│   ├── splits.py               # channel-level and random splits
-│   └── evaluation.py           # metrics, threshold sweep
+│   ├── config.py                    # paths, window size, stride, seeds
+│   ├── data/
+│   │   ├── loader.py                # metadata and .npy channel loading
+│   │   ├── preprocess.py            # per-channel scaling, interval parsing
+│   │   ├── windowing.py             # sliding window construction
+│   │   ├── labeling.py              # interval-overlap window labelling
+│   │   ├── splitting.py             # channel-level and random window splits
+│   │   ├── dataset_builder.py       # assembles model-ready feature tables
+│   │   └── pipeline.py              # end-to-end orchestration
+│   ├── features/
+│   │   └── feature_engineering.py   # 12 statistics per variable
+│   ├── models/
+│   │   ├── random_forest.py
+│   │   ├── xgboost_model.py
+│   │   ├── isolation_forest.py
+│   │   └── tuning.py                # grouped CV model selection
+│   ├── evaluation/
+│   │   ├── metrics.py               # precision, recall, F1, PR-AUC, ROC-AUC
+│   │   ├── thresholding.py          # threshold sweep and selection
+│   │   └── reporting.py             # comparison tables and figures
+│   └── utils/
 ├── notebooks/
-│   ├── 01_main_channel_level.ipynb   # primary strict experiments
-│   ├── 02_smote_experiments.ipynb    # exploratory, see notes
-│   └── 03_random_window_level.ipynb  # secondary optimistic split
-├── data/
-├── results/                    # metric tables, threshold sweeps, figures
+│   ├── 01_data_inspection.ipynb            # dataset exploration and sanity checks
+│   ├── best_case_followup_experiments.ipynb # random window-level split (secondary)
+│   ├── smote_followup_experiments.ipynb     # exploratory, see notes
+│   └── results/
+│       ├── metrics/                 # comparison tables, threshold sweeps (csv)
+│       └── plots/                   # per-model threshold and metric figures
+├── data/raw/
+├── figures/
 ├── requirements.txt
+├── LICENSE
 └── README.md
 ```
+
+**Where the primary results come from.** The strict channel-level experiments run through `src/data/pipeline.py` rather than a notebook, using the models, tuning, and evaluation modules directly. The notebooks cover data inspection, the secondary random window-level comparison, and the exploratory SMOTE work.
+
+Key outputs:
+
+| File | Contents |
+|---|---|
+| `notebooks/results/metrics/paper_model_comparison.csv` | Headline results table |
+| `notebooks/results/metrics/full_model_comparison.csv` | All models, both protocols |
+| `notebooks/results/metrics/combined_smap_msl_model_comparison.csv` | Cross-dataset comparison |
+| `notebooks/results/metrics/threshold_summary.csv` | Selected thresholds per model and setting |
+| `notebooks/results/metrics/{rf,xgb,if}_threshold_sweep.csv` | Per-model threshold sweeps |
+| `notebooks/figure2_strict_vs_random_f1.png` | The strict versus random F1 gap |
+| `notebooks/figure3_strict_vs_random_pr_auc.png` | The same gap in PR-AUC |
 
 ## Reproducing
 
 ```bash
-git clone https://github.com/farhanshahriar30/nasa-spacecraft-telemetry-anomaly-detection
-cd nasa-spacecraft-telemetry-anomaly-detection
+git clone <REPO_URL>
+cd <REPO_NAME>
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Place the NASA benchmark files in `data/` as shown above, then run the notebooks in order. Run them from the `notebooks/` folder, since they add the project root to `sys.path` for `src/` imports.
+Place the NASA benchmark files in `data/raw/` as shown above. Paths, window size, stride, and seeds are configured in `src/config.py`.
+
+**Primary strict channel-level results:** run the pipeline in `src/data/pipeline.py`.
+
+**Secondary and exploratory work:** run the notebooks from the `notebooks/` folder, since they add the project root to `sys.path` for `src/` imports.
 
 Everything runs on CPU. No GPU required.
 
